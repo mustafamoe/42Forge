@@ -1,0 +1,17 @@
+node_modules
+.turbo
+.DS_Store
+.env
+.env.*
+!.env.example
+bun.lockb
+
+# TanStack Start / Vite output
+.output
+dist
+.vite
+.vinxi
+.nitro
+
+# Generated search and framework artifacts
+apps/web/public/pagefind

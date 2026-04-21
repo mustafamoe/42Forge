@@ -1,0 +1,67 @@
+{
+  "name": "@forty-two/web",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "bun --bun vite dev --port 3000",
+    "build": "bun --bun vite build && bun run search:index",
+    "typecheck": "bun run paraglide && tsc -p tsconfig.json --noEmit",
+    "preview": "bun --bun vite preview",
+    "start": "bun run .output/server/index.mjs",
+    "test": "vitest run --config vitest.config.ts",
+    "paraglide": "paraglide-js compile --project ../../project.inlang --outdir ./src/paraglide --emit-ts-declarations --strategy url cookie preferredLanguage baseLocale",
+    "search:index": "pagefind --site .output/public --output-subdir pagefind",
+    "clean": "rm -rf .output .turbo .vite .vinxi src/paraglide src/routeTree.gen.ts public/pagefind"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/lang-cpp": "^6.0.3",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/language": "^6.12.3",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.41.1",
+    "@heroui/react": "^3.0.3",
+    "@heroui/styles": "^3.0.3",
+    "@inlang/paraglide-js": "^2.6.0",
+    "@mdx-js/react": "^3.1.1",
+    "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/react-devtools": "latest",
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-router-devtools": "latest",
+    "@tanstack/react-router-ssr-query": "latest",
+    "@tanstack/react-start": "latest",
+    "@tanstack/router-plugin": "^1.132.0",
+    "lucide-react": "^1.8.0",
+    "nitro": "latest",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "@mdx-js/rollup": "^3.1.1",
+    "@tanstack/devtools-vite": "latest",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "jsdom": "^29.0.2",
+    "pagefind": "^1.4.0",
+    "rehype-pretty-code": "^0.14.3",
+    "remark-gfm": "^4.0.1",
+    "shiki": "^4.0.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "lightningcss"
+    ]
+  }
+}

@@ -1,0 +1,88 @@
+import {
+  Callout,
+  OperationTiles,
+  StackStory,
+  TinyPath,
+} from '@/components/mdx'
+
+export const meta = {
+  title: 'push_swap من الصفر إلى radix',
+  description: 'مختبر بأسلوب TODO أولا لبناء push_swap نقطة واحدة كل مرة: parsing آمن، حركات linked-list، ترتيب صغير، ثم indexed radix.',
+  slug: 'push-swap-guided',
+  section: 'project',
+  difficulty: '42 rank 2',
+  tags: ['c', 'algorithms', 'stacks'],
+  updatedAt: '2026-04-21',
+  projectLabId: 'push-swap',
+  toc: [
+    { id: 'فكرة-المشروع', title: 'فكرة المشروع', depth: 2 },
+    { id: 'كيف-سنتعامل-معه', title: 'كيف سنتعامل معه', depth: 2 },
+    { id: 'الحركات-الوحيدة', title: 'الحركات الوحيدة', depth: 2 },
+  ],
+}
+
+## فكرة المشروع
+
+تخيل عندك كومتان صغيرتان من كروت الأرقام.
+
+الكومة الأولى اسمها `a`. تبدأ وفيها أرقام مبعثرة. الكومة الثانية اسمها `b`.
+تبدأ فارغة. المطلوب أن تحرك الكروت إلى أن تصبح الكومة `a` مرتبة من الأصغر
+إلى الأكبر.
+
+برنامجك لا يحرك الكروت بيده. هو يطبع كلمات حركة صغيرة، والـ checker ينفذ هذه
+الكلمات.
+
+<StackStory
+  emptyLabel="فارغ"
+  stages={[
+    { label: 'البداية', a: [3, 2, 1], b: [], note: 'كل الأرقام تبدأ في a.' },
+    { label: 'الشغل', a: [2, 1], b: [3], note: 'استخدم b كمساحة مؤقتة.' },
+    { label: 'النهاية', a: [1, 2, 3], b: [], note: 'a مرتب. b فارغ.' },
+  ]}
+/>
+
+<Callout type="tip" title="الفكرة البسيطة">
+برنامجك يقول الحركات. الـ checker ينفذ الحركات. إذا انتهى و `a` مرتبة و `b`
+فارغة، فقد نجحت.
+</Callout>
+
+## كيف سنتعامل معه
+
+سنبني المشروع على إحدى عشرة checkpoint صغيرة. كل checkpoint تعطيك كودا أوليا
+فيه TODOs، وزر كشف الحل إذا علقت، وفحوصات تشغلها قبل الانتقال.
+
+<TinyPath
+  items={[
+    { title: 'اقرأ', body: 'اقبل أعدادا صحيحة وغير مكررة وارفض الإدخال الخاطئ.' },
+    { title: 'حرك', body: 'اجعل حركات linked-list stack موثوقة.' },
+    { title: 'رتب', body: 'رتب الحالات الصغيرة، أعط indexes، ثم استخدم radix.' },
+  ]}
+/>
+
+<Callout type="note" title="اجعل التركيز ضيقا">
+في كل لحظة، اهتم بالـ checkpoint الحالية فقط. مشغل المتصفح يتعامل مع صندوق
+الإدخال كـ argv منفصلة، لذلك parsing الخاص بالـ quoted arguments يأتي بعد هذا
+المختبر.
+</Callout>
+
+## الحركات الوحيدة
+
+هذه هي الكلمات الوحيدة التي يحق لبرنامجك طباعتها. كل كلمة هي أمر صغير
+للـ checker:
+
+<Callout type="note" title="كيف تقرأ الكلمات">
+`a` تعني الكومة `a`. `b` تعني الكومة `b`. `s` تعني swap. `p` تعني push.
+`r` تعني rotate. لذلك `sa` تعني بدّل أعلى قيمتين في `a`، و `pb` تعني ادفع
+رقما من `a` إلى `b`.
+</Callout>
+
+<OperationTiles
+  items={[
+    { op: 'sa sb ss', title: 'Swap', body: 'أعلى رقمين يتبادلان المكان.' },
+    { op: 'pa pb', title: 'Push', body: 'أعلى رقم ينتقل للكومة الثانية.' },
+    { op: 'ra rb rr', title: 'Rotate', body: 'أعلى رقم ينزل إلى الأسفل.' },
+    { op: 'rra rrb rrr', title: 'Reverse', body: 'آخر رقم يصعد إلى الأعلى.' },
+  ]}
+/>
+
+اجعل الحركات موثوقة أولا. بعدها يصبح الترتيب أقل إرباكا بكثير.

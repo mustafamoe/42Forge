@@ -1,0 +1,88 @@
+import {
+  Callout,
+  OperationTiles,
+  StackStory,
+  TinyPath,
+} from '@/components/mdx'
+
+export const meta = {
+  title: 'push_swap from zero to radix',
+  description: 'A TODO-first project lab for building push_swap one checkpoint at a time: parse safely, move linked-list stacks, sort small cases, then finish with indexed radix.',
+  slug: 'push-swap-guided',
+  section: 'project',
+  difficulty: '42 rank 2',
+  tags: ['c', 'algorithms', 'stacks'],
+  updatedAt: '2026-04-21',
+  projectLabId: 'push-swap',
+  toc: [
+    { id: 'project-idea', title: 'Project idea', depth: 2 },
+    { id: 'how-we-will-tackle-it', title: 'How we will tackle it', depth: 2 },
+    { id: 'the-only-moves', title: 'The only moves', depth: 2 },
+  ],
+}
+
+## Project idea
+
+Think of two small piles of number cards.
+
+The first pile is called `a`. It starts full of messy numbers. The second pile
+is called `b`. It starts empty. Your job is to move the cards around until pile
+`a` is cleanly sorted from smallest to biggest.
+
+Your program does not move the cards by hand. It prints little move words, and
+the checker follows those words.
+
+<StackStory
+  stages={[
+    { label: 'Start', a: [3, 2, 1], b: [], note: 'All numbers begin in a.' },
+    { label: 'Work', a: [2, 1], b: [3], note: 'Use b as temporary space.' },
+    { label: 'Done', a: [1, 2, 3], b: [], note: 'a is sorted. b is empty.' },
+  ]}
+/>
+
+<Callout type="tip" title="The simple mental model">
+Your program says the moves. The checker does the moves. If the checker ends
+with pile `a` sorted and pile `b` empty, you win.
+</Callout>
+
+## How we will tackle it
+
+We will build the project in eleven small checkpoints. Each checkpoint gives
+you starter code with TODOs, a solution reveal if you get stuck, and checks to
+run before moving forward.
+
+<TinyPath
+  items={[
+    { title: 'Read', body: 'Accept valid unique integers and reject bad input.' },
+    { title: 'Move', body: 'Make linked-list stack operations reliable.' },
+    { title: 'Sort', body: 'Handle tiny cases, assign indexes, then use radix.' },
+  ]}
+/>
+
+<Callout type="note" title="Keep the focus narrow">
+At any moment, care about the current checkpoint only. The browser runner treats
+the input box as separate argv tokens, so quoted-argument parsing is left for
+after this lab.
+</Callout>
+
+## The only moves
+
+These are the only words your program is allowed to print. Each word is a tiny
+instruction for the checker:
+
+<Callout type="note" title="How to read the words">
+`a` means pile `a`. `b` means pile `b`. `s` means swap. `p` means push. `r`
+means rotate. So `sa` means swap pile `a`, and `pb` means push one number from
+pile `a` to pile `b`.
+</Callout>
+
+<OperationTiles
+  items={[
+    { op: 'sa sb ss', title: 'Swap', body: 'The top two numbers trade places.' },
+    { op: 'pa pb', title: 'Push', body: 'The top number moves to the other pile.' },
+    { op: 'ra rb rr', title: 'Rotate', body: 'The top number goes to the bottom.' },
+    { op: 'rra rrb rrr', title: 'Reverse', body: 'The bottom number comes to the top.' },
+  ]}
+/>
+
+First make the moves trustworthy. Sorting becomes much less scary after that.

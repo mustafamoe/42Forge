@@ -1,0 +1,23 @@
+{
+  "name": "forty-two-solutions-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.12",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev --filter=@forty-two/web",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "preview": "turbo preview --filter=@forty-two/web",
+    "start": "turbo start --filter=@forty-two/web",
+    "clean": "turbo clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.6",
+    "typescript": "^6.0.3"
+  }
+}
