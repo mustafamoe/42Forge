@@ -1,10 +1,11 @@
 import { useRouterState } from '@tanstack/react-router'
+import { toast as heroToast } from '@heroui/react'
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Lightbulb, RotateCcw, Target } from 'lucide-react'
 import type { CSSProperties } from 'react'
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { CodeWorkspace } from './CodeWorkspace'
-import type { CodeLineNote, CodeNote } from './CodeWorkspace'
+import type { CodeLineNote, CodeNote, CodeWorkspaceHandle } from './CodeWorkspace'
 import { asLocale, defaultLocale, isLocale, type Locale } from '../lib/i18n'
 import {
   getGuidedProject,
@@ -23,6 +24,8 @@ const copy = {
     current: 'Current',
     back: 'Back',
     next: 'Next',
+    checkingNext: 'Checking...',
+    checksPassed: 'Step checks passed.',
     start: 'Start',
     done: 'Done',
     step: 'Step',
@@ -53,6 +56,8 @@ const copy = {
     current: 'الحالية',
     back: 'السابق',
     next: 'التالي',
+    checkingNext: 'جاري الفحص...',
+    checksPassed: 'نجحت فحوصات الخطوة.',
     start: 'البداية',
     done: 'انتهى',
     step: 'خطوة',
@@ -771,6 +776,8 @@ export function ProjectLab({
   const [guideTarget, setGuideTarget] = useState<HTMLElement | null>(null)
   const [showHints, setShowHints] = useState(false)
   const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(() => new Set())
+  const [isAdvancing, setIsAdvancing] = useState(false)
+  const workspaceRef = useRef<CodeWorkspaceHandle>(null)
 
   useIsomorphicLayoutEffect(() => {
     if (!project) return
@@ -835,6 +842,17 @@ export function ProjectLab({
       ? project.steps[activeStepIndex + 1]
       : null
   const coach = getStepCoach(activeStep, locale)
+
+  const advanceToNextStep = async () => {
+    if (!nextStep || isAdvancing) return
+    setIsAdvancing(true)
+    const checksPassed = await workspaceRef.current?.runChecks()
+    setIsAdvancing(false)
+    if (checksPassed) {
+      loadStep(nextStep.id)
+      heroToast.success(t.checksPassed, { timeout: 4500 })
+    }
+  }
 
   const labPanel = (
     <div className="project-lab-panel">
@@ -942,11 +960,11 @@ export function ProjectLab({
             </button>
           ) : null}
           <button
-            disabled={!nextStep}
-            onClick={() => nextStep && loadStep(nextStep.id)}
+            disabled={!nextStep || isAdvancing}
+            onClick={advanceToNextStep}
             type="button"
           >
-            <span>{nextStep ? t.next : t.done}</span>
+            <span>{isAdvancing ? t.checkingNext : nextStep ? t.next : t.done}</span>
             <ChevronRight aria-hidden="true" size={15} />
           </button>
         </div>
@@ -963,12 +981,14 @@ export function ProjectLab({
       </div>
 
       <CodeWorkspace
+        ref={workspaceRef}
         locale={locale}
         initialLanguage={project.language}
         initialTemplate={activeStep.template}
         initialStdin={activeStep.suggestedStdin}
         workspaceKey={`${project.id}:${activeStep.id}`}
         allowLanguageSwitch={false}
+        filesToEdit={activeStep.filesToEdit}
         solutionTemplate={activeStep.solutionTemplate}
         checkCases={activeStep.checkCases}
         onChecksComplete={markActiveStepComplete}

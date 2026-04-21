@@ -155,7 +155,7 @@ function ArticlePage() {
           <div
             aria-label="Resize lesson panel"
             aria-orientation="vertical"
-            className="learning-resizer"
+            className="learning-resizer w-1 shrink-0 cursor-col-resize bg-[color-mix(in_oklab,var(--line)_70%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--control-bg)]"
             onKeyDown={(event) => {
               if (event.key === 'ArrowLeft') {
                 event.preventDefault()
@@ -271,7 +271,10 @@ function ProjectDetailSkeleton() {
           </div>
         </article>
 
-        <div className="learning-resizer" aria-hidden="true" />
+        <div
+          className="learning-resizer w-1 shrink-0 bg-[color-mix(in_oklab,var(--line)_70%,transparent)]"
+          aria-hidden="true"
+        />
 
         <aside className="learning-lab" data-pagefind-ignore>
           <div className="project-detail-skeleton-editor" aria-hidden="true">

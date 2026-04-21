@@ -4,11 +4,12 @@ import { cpp } from '@codemirror/lang-cpp'
 import { python } from '@codemirror/lang-python'
 import {
   bracketMatching,
-  defaultHighlightStyle,
+  HighlightStyle,
   indentOnInput,
   syntaxHighlighting,
 } from '@codemirror/language'
 import { EditorState } from '@codemirror/state'
+import { tags } from '@lezer/highlight'
 import {
   EditorView,
   highlightActiveLine,
@@ -20,16 +21,13 @@ import {
   Code2,
   ChevronDown,
   ChevronRight,
-  CheckCircle2,
   Download,
   Eye,
   FileCode2,
   FileInput,
-  FilePlus2,
   FileText,
   Folder,
   FolderOpen,
-  FolderPlus,
   FolderTree,
   Play,
   RotateCcw,
@@ -37,7 +35,15 @@ import {
   TerminalSquare,
 } from 'lucide-react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { toast as heroToast } from '@heroui/react'
 import { runCode } from '../lib/editor-runner'
@@ -49,7 +55,6 @@ import {
   cloneTemplate,
   getParentFolders,
   makeZip,
-  normalizeProjectPath,
   starterInput,
   templates,
   type Language,
@@ -71,13 +76,7 @@ type WorkspaceCopy = {
   run: string
   reset: string
   export: string
-  addFile: string
-  addFolder: string
   loadTemplate: string
-  filePrompt: string
-  folderPrompt: string
-  invalidPath: string
-  duplicatePath: string
   ready: string
   running: string
   success: string
@@ -96,9 +95,14 @@ type WorkspaceCopy = {
   codeHelpMissing: string
   line: string
   revealSolution: string
-  checkStep: string
+  hideSolution: string
+  solution: string
+  solutionMissing: string
+  solutionUnchanged: string
+  requiredFile: string
+  editedFile: string
+  solutionViewed: string
   checking: string
-  checksPassed: string
   checkFailed: string
 }
 
@@ -112,13 +116,7 @@ const workspaceCopy = {
     run: 'Run',
     reset: 'Reset',
     export: 'Export',
-    addFile: 'File',
-    addFolder: 'Folder',
     loadTemplate: '42 tree',
-    filePrompt: 'New file path, for example src/check.c',
-    folderPrompt: 'New folder path, for example tests',
-    invalidPath: 'Use a relative path without spaces, .., or special symbols.',
-    duplicatePath: 'That path already exists.',
     ready: 'Run your project to see output here.',
     running: 'Running...',
     success: 'Finished successfully',
@@ -137,9 +135,14 @@ const workspaceCopy = {
     codeHelpMissing: 'No line help for this line yet.',
     line: 'line',
     revealSolution: 'Reveal',
-    checkStep: 'Check',
+    hideSolution: 'Hide',
+    solution: 'Solution',
+    solutionMissing: 'No solution is available for this file.',
+    solutionUnchanged: 'No solution changes for this file.',
+    requiredFile: 'To edit',
+    editedFile: 'Edited',
+    solutionViewed: 'Solution viewed',
     checking: 'Checking...',
-    checksPassed: 'All step checks passed.',
     checkFailed: 'Check failed',
   },
   ar: {
@@ -151,13 +154,7 @@ const workspaceCopy = {
     run: 'تشغيل',
     reset: 'إعادة',
     export: 'تصدير',
-    addFile: 'ملف',
-    addFolder: 'مجلد',
     loadTemplate: 'شجرة 42',
-    filePrompt: 'مسار الملف الجديد، مثلا src/check.c',
-    folderPrompt: 'مسار المجلد الجديد، مثلا tests',
-    invalidPath: 'استخدم مسارا نسبيا بدون مسافات أو .. أو رموز خاصة.',
-    duplicatePath: 'هذا المسار موجود بالفعل.',
     ready: 'شغل المشروع لتظهر النتيجة هنا.',
     running: 'جاري التشغيل...',
     success: 'انتهى بنجاح',
@@ -176,9 +173,14 @@ const workspaceCopy = {
     codeHelpMissing: 'لا يوجد شرح لهذا السطر حتى الآن.',
     line: 'سطر',
     revealSolution: 'الحل',
-    checkStep: 'افحص',
+    hideSolution: 'إخفاء',
+    solution: 'الحل',
+    solutionMissing: 'لا يوجد حل لهذا الملف.',
+    solutionUnchanged: 'لا توجد تغييرات حل لهذا الملف.',
+    requiredFile: 'للتعديل',
+    editedFile: 'تم تعديله',
+    solutionViewed: 'تم عرض الحل',
     checking: 'جاري الفحص...',
-    checksPassed: 'نجحت كل فحوصات الخطوة.',
     checkFailed: 'فشل الفحص',
   },
 } satisfies Record<Locale, WorkspaceCopy>
@@ -189,6 +191,13 @@ const TREE_PANEL_MAX = 380
 const SIDE_PANEL_MIN = 300
 const SIDE_PANEL_DEFAULT = 360
 const SIDE_PANEL_MAX = 560
+const SOLUTION_PANEL_MIN = 120
+const SOLUTION_PANEL_DEFAULT = 240
+const SOLUTION_PANEL_MAX = 520
+const verticalResizerClassName =
+  'editor-resizer w-1.5 shrink-0 cursor-col-resize bg-[color-mix(in_oklab,var(--line)_70%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--control-bg)]'
+const horizontalResizerClassName =
+  'solution-resizer h-1.5 shrink-0 cursor-row-resize bg-[color-mix(in_oklab,var(--line)_70%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--control-bg)]'
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
@@ -225,6 +234,20 @@ function getExpandedFolderPaths(
 
   return paths
 }
+
+const codeHighlightStyle = HighlightStyle.define([
+  { tag: tags.comment, color: 'var(--code-token-comment)' },
+  { tag: tags.string, color: 'var(--code-token-string)' },
+  { tag: tags.number, color: 'var(--code-token-number)' },
+  { tag: tags.keyword, color: 'var(--code-token-keyword)' },
+  { tag: tags.controlKeyword, color: 'var(--code-token-keyword)' },
+  { tag: tags.typeName, color: 'var(--code-token-type)' },
+  { tag: tags.standard(tags.typeName), color: 'var(--code-token-type)' },
+  { tag: tags.function(tags.variableName), color: 'var(--code-token-function)' },
+  { tag: tags.definition(tags.function(tags.variableName)), color: 'var(--code-token-function)' },
+  { tag: tags.variableName, color: 'var(--code-token-variable)' },
+  { tag: tags.operator, color: 'var(--code-token-operator)' },
+])
 
 const codeEditorTheme = EditorView.theme(
   {
@@ -274,6 +297,7 @@ export type CodeWorkspaceProps = {
   initialStdin: string
   workspaceKey?: string
   allowLanguageSwitch?: boolean
+  filesToEdit?: Array<string>
   labPanel?: ReactNode
   solutionTemplate?: ProjectTemplate
   checkCases?: Array<StepCheckCase>
@@ -285,13 +309,18 @@ export type CodeWorkspaceProps = {
   toolbarStart?: ReactNode
 }
 
-export function CodeWorkspace({
+export type CodeWorkspaceHandle = {
+  runChecks: () => Promise<boolean>
+}
+
+export const CodeWorkspace = forwardRef<CodeWorkspaceHandle, CodeWorkspaceProps>(function CodeWorkspace({
   locale,
   initialLanguage,
   initialTemplate,
   initialStdin,
   workspaceKey,
   allowLanguageSwitch = true,
+  filesToEdit = [],
   labPanel,
   solutionTemplate,
   checkCases = [],
@@ -301,7 +330,7 @@ export function CodeWorkspace({
   exportFilename,
   toolbarPortalId,
   toolbarStart,
-}: CodeWorkspaceProps) {
+}: CodeWorkspaceProps, ref) {
   const t = workspaceCopy[locale]
   const isRtl = locale === 'ar'
   const execute = useServerFn(runCode)
@@ -326,6 +355,12 @@ export function CodeWorkspace({
     if (typeof document === 'undefined' || !toolbarPortalId) return null
     return document.getElementById(toolbarPortalId)
   })
+  const [isSolutionVisible, setIsSolutionVisible] = useState(false)
+  const [editedFilePaths, setEditedFilePaths] = useState<Set<string>>(() => new Set())
+  const [revealedSolutionPaths, setRevealedSolutionPaths] = useState<Set<string>>(
+    () => new Set(),
+  )
+  const [solutionPanelHeight, setSolutionPanelHeight] = useState(SOLUTION_PANEL_DEFAULT)
   const [treeWidth, setTreeWidth] = useState(TREE_PANEL_DEFAULT)
   const [sideWidth, setSideWidth] = useState(SIDE_PANEL_DEFAULT)
   const [selectedCodeLine, setSelectedCodeLine] = useState<number | null>(null)
@@ -362,6 +397,10 @@ export function CodeWorkspace({
     setIsDirty(false)
     setSelectedCodeLine(null)
     setIsChecking(false)
+    setIsSolutionVisible(false)
+    setEditedFilePaths(new Set())
+    setRevealedSolutionPaths(new Set())
+    setSolutionPanelHeight(SOLUTION_PANEL_DEFAULT)
   }, [initialLanguage, initialStdin, initialTemplate, workspaceKey])
 
   useIsomorphicLayoutEffect(() => {
@@ -382,6 +421,28 @@ export function CodeWorkspace({
     [expandedFolders, treeRows],
   )
   const activeFile = files.find((file) => file.path === activePath) ?? files[0]
+  const activeSolutionFile = useMemo(() => {
+    if (!solutionTemplate || !activeFile) return null
+    return (
+      solutionTemplate.files.find((file) => file.path === activeFile.path) ?? null
+    )
+  }, [activeFile, solutionTemplate])
+  const activeStarterFile = useMemo(() => {
+    if (!activeFile) return null
+    return initialTemplate.files.find((file) => file.path === activeFile.path) ?? null
+  }, [activeFile, initialTemplate])
+  const activeSolutionDiffers =
+    !!activeSolutionFile &&
+    activeSolutionFile.content !== (activeStarterFile?.content ?? '')
+  const requiredFilePaths = useMemo(() => new Set(filesToEdit), [filesToEdit])
+
+  useEffect(() => {
+    if (!isSolutionVisible || !activeSolutionFile || !activeSolutionDiffers) return
+    setRevealedSolutionPaths((currentPaths) => {
+      if (currentPaths.has(activeSolutionFile.path)) return currentPaths
+      return new Set(currentPaths).add(activeSolutionFile.path)
+    })
+  }, [activeSolutionDiffers, activeSolutionFile, isSolutionVisible])
   const activeCodeNote = useMemo(() => {
     if (!activeFile || selectedCodeLine === null) return null
     return (
@@ -432,6 +493,10 @@ export function CodeWorkspace({
     clearToast()
     setIsDirty(false)
     setIsChecking(false)
+    setIsSolutionVisible(false)
+    setEditedFilePaths(new Set())
+    setRevealedSolutionPaths(new Set())
+    setSolutionPanelHeight(SOLUTION_PANEL_DEFAULT)
   }
 
   const updateLanguage = (nextLanguage: Language) => {
@@ -446,64 +511,20 @@ export function CodeWorkspace({
       ),
     )
     setIsDirty(true)
+    setEditedFilePaths((currentPaths) => {
+      const nextPaths = new Set(currentPaths)
+      const starterContent =
+        initialTemplate.files.find((file) => file.path === activeFile.path)?.content ??
+        ''
+      if (content === starterContent) nextPaths.delete(activeFile.path)
+      else nextPaths.add(activeFile.path)
+      return nextPaths
+    })
   }
 
   const selectActivePath = (path: string) => {
     setActivePath(path)
     setSelectedCodeLine(null)
-  }
-
-  const addFile = () => {
-    const answer = window.prompt(t.filePrompt)
-    if (answer === null) return
-
-    try {
-      const path = normalizeProjectPath(answer)
-      if (files.some((file) => file.path === path)) {
-        showToast(t.duplicatePath, 'error')
-        return
-      }
-
-      setFiles((currentFiles) => [...currentFiles, { path, content: '' }])
-      setFolders((currentFolders) => {
-        const known = new Set(currentFolders.map((folder) => folder.path))
-        const parents = getParentFolders(path).filter((folder) => !known.has(folder))
-        return [
-          ...currentFolders,
-          ...parents.map((folder) => ({ path: folder })),
-        ]
-      })
-      setExpandedFolders((currentFolders) => {
-        const nextFolders = new Set(currentFolders)
-        for (const parent of getParentFolders(path)) nextFolders.add(parent)
-        return nextFolders
-      })
-      setActivePath(path)
-      clearToast()
-      setIsDirty(true)
-    } catch {
-      showToast(t.invalidPath, 'error')
-    }
-  }
-
-  const addFolder = () => {
-    const answer = window.prompt(t.folderPrompt)
-    if (answer === null) return
-
-    try {
-      const path = normalizeProjectPath(answer, true)
-      if (folders.some((folder) => folder.path === path)) {
-        showToast(t.duplicatePath, 'error')
-        return
-      }
-
-      setFolders((currentFolders) => [...currentFolders, { path }])
-      setExpandedFolders((currentFolders) => new Set(currentFolders).add(path))
-      clearToast()
-      setIsDirty(true)
-    } catch {
-      showToast(t.invalidPath, 'error')
-    }
   }
 
   const toggleFolder = (path: string) => {
@@ -529,15 +550,13 @@ export function CodeWorkspace({
 
   const revealSolution = () => {
     if (!solutionTemplate) return
-    const project = cloneTemplate(solutionTemplate)
-    setFiles(project.files)
-    setFolders(project.folders)
-    setExpandedFolders(getExpandedFolderPaths(project.files, project.folders))
-    setActivePath(project.activePath)
-    setResult(null)
-    clearToast()
-    setIsDirty(true)
-    setSelectedCodeLine(null)
+    const nextIsVisible = !isSolutionVisible
+    setIsSolutionVisible(nextIsVisible)
+    if (nextIsVisible && activeSolutionFile && activeSolutionDiffers) {
+      setRevealedSolutionPaths((currentPaths) =>
+        new Set(currentPaths).add(activeSolutionFile.path),
+      )
+    }
   }
 
   const evaluateCheckCase = (checkCase: StepCheckCase, nextResult: RunResult) => {
@@ -589,7 +608,8 @@ export function CodeWorkspace({
   }
 
   const runCheckCases = async () => {
-    if (!checkCases.length) return
+    if (!checkCases.length) return true
+    if (isRunning || isChecking) return false
     setIsChecking(true)
     setResult(null)
     clearToast()
@@ -608,11 +628,11 @@ export function CodeWorkspace({
         const failure = evaluateCheckCase(checkCase, nextResult)
         if (failure) {
           showToast(`${t.checkFailed}: ${failure}`, 'error')
-          return
+          return false
         }
       }
-      showToast(t.checksPassed, 'success')
       onChecksComplete?.()
+      return true
     } catch (error) {
       setResult({
         ok: false,
@@ -623,10 +643,13 @@ export function CodeWorkspace({
         durationMs: 0,
         command: language,
       })
+      return false
     } finally {
       setIsChecking(false)
     }
   }
+
+  useImperativeHandle(ref, () => ({ runChecks: runCheckCases }))
 
   const runCurrentCode = async () => {
     setIsRunning(true)
@@ -698,6 +721,37 @@ export function CodeWorkspace({
     window.addEventListener('pointerup', onUp)
   }
 
+  const resizeSolutionPanel = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const container = event.currentTarget.parentElement
+    if (!container) return
+
+    event.preventDefault()
+    const solutionPanel = event.currentTarget.previousElementSibling as HTMLElement | null
+    const startY = event.clientY
+    const startHeight =
+      solutionPanel?.getBoundingClientRect().height ?? solutionPanelHeight
+    const pointerId = event.pointerId
+    event.currentTarget.setPointerCapture(pointerId)
+
+    const onMove = (moveEvent: PointerEvent) => {
+      const bounds = container.getBoundingClientRect()
+      const height = Math.round(startHeight + moveEvent.clientY - startY)
+      const maxHeight = Math.min(
+        SOLUTION_PANEL_MAX,
+        Math.max(SOLUTION_PANEL_MIN, bounds.height - 180),
+      )
+      setSolutionPanelHeight(clamp(height, SOLUTION_PANEL_MIN, maxHeight))
+    }
+
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
   const adjustEditorPanel = (panel: 'tree' | 'side', widthDelta: number) => {
     if (panel === 'tree') {
       setTreeWidth((width) => clamp(width + widthDelta, TREE_PANEL_MIN, TREE_PANEL_MAX))
@@ -714,6 +768,12 @@ export function CodeWorkspace({
     }
 
     adjustEditorPanel(panel, isRtl ? physicalDelta : -physicalDelta)
+  }
+
+  const adjustSolutionPanelForKey = (heightDelta: number) => {
+    setSolutionPanelHeight((height) =>
+      clamp(height + heightDelta, SOLUTION_PANEL_MIN, SOLUTION_PANEL_MAX),
+    )
   }
 
   const toolbar = (
@@ -743,26 +803,6 @@ export function CodeWorkspace({
       </div>
 
       <div className="editor-actions">
-        <button
-          aria-label={t.addFolder}
-          className="editor-button secondary"
-          onClick={addFolder}
-          title={t.addFolder}
-          type="button"
-        >
-          <FolderPlus aria-hidden="true" size={16} />
-          <span>{t.addFolder}</span>
-        </button>
-        <button
-          aria-label={t.addFile}
-          className="editor-button secondary"
-          onClick={addFile}
-          title={t.addFile}
-          type="button"
-        >
-          <FilePlus2 aria-hidden="true" size={16} />
-          <span>{t.addFile}</span>
-        </button>
         {allowLanguageSwitch ? (
           <button
             aria-label={t.loadTemplate}
@@ -797,27 +837,14 @@ export function CodeWorkspace({
         </button>
         {solutionTemplate ? (
           <button
-            aria-label={t.revealSolution}
+            aria-label={isSolutionVisible ? t.hideSolution : t.revealSolution}
             className="editor-button secondary"
             onClick={revealSolution}
-            title={t.revealSolution}
+            title={isSolutionVisible ? t.hideSolution : t.revealSolution}
             type="button"
           >
             <Eye aria-hidden="true" size={16} />
-            <span>{t.revealSolution}</span>
-          </button>
-        ) : null}
-        {checkCases.length ? (
-          <button
-            aria-label={isChecking ? t.checking : t.checkStep}
-            className="editor-button primary"
-            disabled={isRunning || isChecking}
-            onClick={runCheckCases}
-            title={isChecking ? t.checking : t.checkStep}
-            type="button"
-          >
-            <CheckCircle2 aria-hidden="true" size={16} />
-            <span>{isChecking ? t.checking : t.checkStep}</span>
+            <span>{isSolutionVisible ? t.hideSolution : t.revealSolution}</span>
           </button>
         ) : null}
         <button
@@ -866,12 +893,25 @@ export function CodeWorkspace({
             {visibleTreeRows.map((row) => {
               const isFolder = row.kind === 'folder'
               const isExpanded = isFolder && expandedFolders.has(row.path)
+              const isRequired = !isFolder && requiredFilePaths.has(row.path)
+              const isEdited = !isFolder && editedFilePaths.has(row.path)
+              const isSolutionRevealed =
+                !isFolder && revealedSolutionPaths.has(row.path)
 
               return (
                 <button
                   key={`${row.kind}:${row.path}`}
                   aria-expanded={isFolder ? isExpanded : undefined}
-                  className={`tree-row ${row.kind} ${row.path === activePath ? 'is-active' : ''}`}
+                  className={[
+                    'tree-row',
+                    row.kind,
+                    row.path === activePath ? 'is-active' : '',
+                    isRequired ? 'is-required' : '',
+                    isEdited ? 'is-edited' : '',
+                    isSolutionRevealed ? 'has-solution' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                   onClick={() => {
                     if (isFolder) toggleFolder(row.path)
                     else selectActivePath(row.path)
@@ -913,6 +953,28 @@ export function CodeWorkspace({
                     </>
                   )}
                   <span>{row.name}</span>
+                  {!isFolder ? (
+                    <span className="tree-row-badges" aria-hidden="true">
+                      {isRequired ? (
+                        <span className="tree-row-badge required" title={t.requiredFile}>
+                          T
+                        </span>
+                      ) : null}
+                      {isEdited ? (
+                        <span className="tree-row-badge edited" title={t.editedFile}>
+                          E
+                        </span>
+                      ) : null}
+                      {isSolutionRevealed ? (
+                        <span
+                          className="tree-row-badge solution"
+                          title={t.solutionViewed}
+                        >
+                          S
+                        </span>
+                      ) : null}
+                    </span>
+                  ) : null}
                 </button>
               )
             })}
@@ -922,7 +984,7 @@ export function CodeWorkspace({
         <div
           aria-label="Resize file tree"
           aria-orientation="vertical"
-          className="editor-resizer"
+          className={verticalResizerClassName}
           onKeyDown={(event) => {
             if (event.key === 'ArrowLeft') {
               event.preventDefault()
@@ -942,10 +1004,58 @@ export function CodeWorkspace({
           <span className="editor-panel-title source-title">
             <Code2 aria-hidden="true" size={18} />
             <span>{activeFile?.path ?? t.source}</span>
-            <strong className={`workspace-state ${isDirty ? 'is-dirty' : ''}`}>
+            <strong
+              className={`workspace-state ${isDirty ? 'is-dirty' : ''}`}
+            >
               {isDirty ? t.edited : t.checkpoint}
             </strong>
           </span>
+          {isSolutionVisible ? (
+            <section
+              className="solution-reference"
+              aria-label={t.solution}
+              style={{ '--solution-height': `${solutionPanelHeight}px` } as CSSProperties}
+            >
+              <div className="solution-reference-title">
+                <Eye aria-hidden="true" size={15} />
+                <strong>{t.solution}</strong>
+                <span>{activeFile?.path ?? t.source}</span>
+              </div>
+              {activeSolutionFile ? (
+                activeSolutionDiffers ? (
+                  <CodeEditor
+                    language={language}
+                    readOnly
+                    value={activeSolutionFile.content}
+                  />
+                ) : (
+                  <p>{t.solutionUnchanged}</p>
+                )
+              ) : (
+                <p>{t.solutionMissing}</p>
+              )}
+            </section>
+          ) : null}
+          {isSolutionVisible ? (
+            <div
+              aria-label="Resize solution reference"
+              aria-orientation="horizontal"
+              className={horizontalResizerClassName}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault()
+                  adjustSolutionPanelForKey(-16)
+                }
+                if (event.key === 'ArrowDown') {
+                  event.preventDefault()
+                  adjustSolutionPanelForKey(16)
+                }
+              }}
+              onPointerDown={resizeSolutionPanel}
+              role="separator"
+              tabIndex={0}
+            />
+          ) : null}
           <CodeEditor
             language={language}
             onLineSelect={setSelectedCodeLine}
@@ -957,7 +1067,7 @@ export function CodeWorkspace({
         <div
           aria-label="Resize output panel"
           aria-orientation="vertical"
-          className="editor-resizer"
+          className={verticalResizerClassName}
           onKeyDown={(event) => {
             if (event.key === 'ArrowLeft') {
               event.preventDefault()
@@ -1047,18 +1157,20 @@ export function CodeWorkspace({
       </div>
     </section>
   )
-}
+})
 
 function CodeEditor({
   language,
   onLineSelect,
+  readOnly = false,
   value,
   onChange,
 }: {
   language: Language
   onLineSelect?: (line: number) => void
+  readOnly?: boolean
   value: string
-  onChange: (value: string) => void
+  onChange?: (value: string) => void
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const viewRef = useRef<EditorView | null>(null)
@@ -1093,7 +1205,7 @@ function CodeEditor({
           history(),
           indentOnInput(),
           bracketMatching(),
-          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          syntaxHighlighting(codeHighlightStyle, { fallback: true }),
           keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
           language === 'python' ? python() : cpp(),
           codeEditorTheme,
@@ -1112,13 +1224,15 @@ function CodeEditor({
             if (!update.docChanged || applyingExternalValueRef.current) return
             const nextValue = update.state.doc.toString()
             valueRef.current = nextValue
-            onChangeRef.current(nextValue)
+            onChangeRef.current?.(nextValue)
           }),
           EditorView.updateListener.of((update) => {
             if (!update.selectionSet) return
             const line = update.state.doc.lineAt(update.state.selection.main.head)
             onLineSelectRef.current?.(line.number)
           }),
+          EditorState.readOnly.of(readOnly),
+          EditorView.editable.of(!readOnly),
         ],
       }),
     })
@@ -1129,7 +1243,7 @@ function CodeEditor({
       view.destroy()
       viewRef.current = null
     }
-  }, [language])
+  }, [language, readOnly])
 
   useEffect(() => {
     const view = viewRef.current

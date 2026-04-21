@@ -37,6 +37,14 @@
   --code-status-bg: #e9f1f3;
   --code-status-border: #c9d7da;
   --code-input-text: #403917;
+  --code-token-comment: #6f7b7e;
+  --code-token-string: #b42318;
+  --code-token-number: #007a5a;
+  --code-token-keyword: #8a1fa2;
+  --code-token-type: #00745e;
+  --code-token-function: #005fcc;
+  --code-token-variable: #263133;
+  --code-token-operator: #596467;
   --status-success: #25763a;
   --status-danger: #b4233a;
   --status-warn: #8f5d00;
@@ -75,6 +83,14 @@
   --code-status-bg: rgba(255, 255, 255, 0.025);
   --code-status-border: rgba(255, 255, 255, 0.12);
   --code-input-text: #fff3bf;
+  --code-token-comment: #a4b0b3;
+  --code-token-string: #ff8f7f;
+  --code-token-number: #8be9c7;
+  --code-token-keyword: #f47dff;
+  --code-token-type: #5cffb0;
+  --code-token-function: #7dd3ff;
+  --code-token-variable: #f3f7f8;
+  --code-token-operator: #f0f4f5;
   --status-success: #8ad17d;
   --status-danger: #ff8aa0;
   --status-warn: #e9b75f;
@@ -113,6 +129,14 @@
     --code-status-bg: rgba(255, 255, 255, 0.025);
     --code-status-border: rgba(255, 255, 255, 0.12);
     --code-input-text: #fff3bf;
+    --code-token-comment: #a4b0b3;
+    --code-token-string: #ff8f7f;
+    --code-token-number: #8be9c7;
+    --code-token-keyword: #f47dff;
+    --code-token-type: #5cffb0;
+    --code-token-function: #7dd3ff;
+    --code-token-variable: #f3f7f8;
+    --code-token-operator: #f0f4f5;
     --status-success: #8ad17d;
     --status-danger: #ff8aa0;
     --status-warn: #e9b75f;
@@ -676,18 +700,6 @@ pre code {
   overflow: hidden;
   background: var(--surface);
   padding: 0;
-}
-
-.learning-resizer,
-.editor-resizer {
-  background: color-mix(in oklab, var(--line) 70%, transparent);
-  cursor: col-resize;
-}
-
-.learning-resizer:focus-visible,
-.editor-resizer:focus-visible {
-  outline: 2px solid var(--control-bg);
-  outline-offset: -2px;
 }
 
 .learning-lab,
@@ -1923,6 +1935,14 @@ pre code {
   color: var(--brand);
 }
 
+.tree-row.file.is-required {
+  color: var(--text);
+}
+
+.tree-row.file.is-edited:not(.is-active) {
+  color: var(--text);
+}
+
 .tree-row.file.is-active {
   border-color: var(--line);
   background: var(--control-bg);
@@ -1934,6 +1954,38 @@ pre code {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tree-row-badges {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.18rem;
+  margin-inline-start: auto;
+}
+
+.tree-row-badge {
+  display: inline-grid;
+  width: 0.82rem;
+  height: 0.82rem;
+  place-items: center;
+  border: 1px solid currentColor;
+  font: 700 0.52rem/1 var(--font-mono);
+}
+
+.tree-row-badge.required {
+  color: var(--warn);
+}
+
+.tree-row-badge.edited {
+  color: var(--good);
+}
+
+.tree-row-badge.solution {
+  color: var(--brand);
+}
+
+.tree-row.file.is-active .tree-row-badge {
+  color: #111111;
 }
 
 .editor-panel textarea,
@@ -1955,6 +2007,49 @@ pre code {
   flex: 1;
   overflow: hidden;
   background: var(--code-bg);
+}
+
+.solution-reference {
+  display: flex;
+  min-height: 120px;
+  flex: 0 0 var(--solution-height, 240px);
+  flex-direction: column;
+  background: color-mix(in oklab, var(--warn) 12%, var(--code-bg) 88%);
+}
+
+.solution-reference-title {
+  display: flex;
+  min-height: 1.8rem;
+  align-items: center;
+  gap: 0.35rem;
+  border-bottom: 1px solid var(--code-status-border);
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding-inline: 0.55rem;
+  text-transform: uppercase;
+}
+
+.solution-reference-title span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.solution-reference .code-editor {
+  min-height: 0;
+  flex: 1;
+}
+
+.solution-reference p {
+  margin: 0;
+  padding: 0.65rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .code-editor .cm-editor {
