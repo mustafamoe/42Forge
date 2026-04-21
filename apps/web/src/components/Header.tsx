@@ -1,6 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import ThemeToggle from './ThemeToggle'
-import { FortyTwoLogo } from './FortyTwoLogo'
 import { defaultLocale, isLocale, otherLocale } from '../lib/i18n'
 import * as m from '../paraglide/messages.js'
 
@@ -11,7 +10,7 @@ export default function Header() {
   const nextLocale = otherLocale(locale)
   const languageHref = pathname.replace(/^\/(en|ar)(?=\/|$)/, `/${nextLocale}`)
   const nextLocaleFlag = nextLocale === 'ar' ? '🇦🇪' : '🇺🇸'
-  const examsLabel = locale === 'ar' ? 'الامتحانات' : 'Exams'
+  const nextLocaleLabel = nextLocale === 'ar' ? 'العربية' : 'English'
 
   return (
     <header className="site-header">
@@ -21,24 +20,8 @@ export default function Header() {
           params={{ locale }}
           className="brand-link"
         >
-          <FortyTwoLogo />
           <span>{m.brand({}, { locale })}</span>
         </Link>
-
-        <div className="nav-links">
-          <a
-            href={`/${locale}#projects`}
-            className="nav-link"
-          >
-            {m.nav_projects({}, { locale })}
-          </a>
-          <a
-            href={`/${locale}#exam-track`}
-            className="nav-link"
-          >
-            {examsLabel}
-          </a>
-        </div>
 
         <div className="header-actions">
           <a
@@ -48,6 +31,7 @@ export default function Header() {
             title={m.nav_language({}, { locale })}
           >
             <span aria-hidden="true">{nextLocaleFlag}</span>
+            <span>{nextLocaleLabel}</span>
           </a>
           <ThemeToggle />
         </div>

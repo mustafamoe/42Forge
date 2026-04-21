@@ -1,5 +1,5 @@
 {
-  "brand": "42 Guides",
+  "brand": "42Forge",
   "nav_projects": "Projects",
   "nav_search": "Search",
   "nav_language": "Switch to Arabic",
@@ -19,6 +19,11 @@
   "guided_step_two": "Build the core",
   "guided_step_three": "Measure the strategy",
   "featured_title": "Guided project",
+  "contribute_eyebrow": "Contribute on GitHub",
+  "contribute_title": "Suggest fixes, details, projects, or exams.",
+  "contribute_body": "Found a mistake, want more context, or have another 42 project or exam topic to add? Open a GitHub issue or send a pull request so the guide can grow with the community.",
+  "contribute_primary": "Suggest an update",
+  "contribute_secondary": "View repository",
   "difficulty": "Difficulty",
   "updated": "Updated",
   "tags": "Tags",

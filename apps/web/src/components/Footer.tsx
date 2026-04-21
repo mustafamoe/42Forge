@@ -1,4 +1,6 @@
-import { Code2, GitBranch, Search } from 'lucide-react'
+import { Code2, Search } from 'lucide-react'
+import { GitHubLogo } from './GitHubLogo'
+import { GITHUB_REPO_URL } from '../lib/links'
 import { getLocale } from '../paraglide/runtime.js'
 import * as m from '../paraglide/messages.js'
 
@@ -29,11 +31,13 @@ export default function Footer() {
             <Search aria-hidden="true" size={18} />
           </a>
           <a
-            href="https://github.com"
+            href={GITHUB_REPO_URL}
             aria-label="GitHub"
             className="footer-link"
+            target="_blank"
+            rel="noreferrer"
           >
-            <GitBranch aria-hidden="true" size={18} />
+            <GitHubLogo size={18} />
           </a>
         </div>
       </div>

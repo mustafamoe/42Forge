@@ -1,5 +1,5 @@
 {
-  "brand": "أدلة 42",
+  "brand": "42Forge",
   "nav_projects": "المشاريع",
   "nav_search": "البحث",
   "nav_language": "التبديل إلى الإنجليزية",
@@ -19,6 +19,11 @@
   "guided_step_two": "ابن الأساس",
   "guided_step_three": "قس الاستراتيجية",
   "featured_title": "المشروع الموجه",
+  "contribute_eyebrow": "ساهم عبر GitHub",
+  "contribute_title": "اقترح إصلاحات، تفاصيل، مشاريع، أو امتحانات.",
+  "contribute_body": "إذا وجدت خطأ، أو تريد معلومات أكثر، أو لديك مشروع أو موضوع امتحان من 42 لإضافته، افتح issue في GitHub أو أرسل pull request حتى يكبر الدليل مع المجتمع.",
+  "contribute_primary": "اقترح تحديثاً",
+  "contribute_secondary": "افتح المستودع",
   "difficulty": "الصعوبة",
   "updated": "آخر تحديث",
   "tags": "الوسوم",

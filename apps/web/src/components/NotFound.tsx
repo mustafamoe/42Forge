@@ -10,7 +10,7 @@ export function NotFound() {
         <h1>{m.not_found_title()}</h1>
         <p>{m.not_found_body()}</p>
         <Link to="/" className="text-link">
-          42 Docs
+          42Forge
         </Link>
       </section>
     </main>

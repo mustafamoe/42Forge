@@ -1,7 +1,7 @@
 import { useRouterState } from '@tanstack/react-router'
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Lightbulb, RotateCcw, Target } from 'lucide-react'
 import type { CSSProperties } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { CodeWorkspace } from './CodeWorkspace'
 import type { CodeLineNote, CodeNote } from './CodeWorkspace'
@@ -12,6 +12,9 @@ import {
   type GuidedProject,
   type GuidedStep,
 } from '../lib/guided-projects'
+
+const useIsomorphicLayoutEffect =
+  typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 const copy = {
   en: {
@@ -769,12 +772,12 @@ export function ProjectLab({
   const [showHints, setShowHints] = useState(false)
   const [completedStepIds, setCompletedStepIds] = useState<Set<string>>(() => new Set())
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!project) return
     setActiveStepId(getStoredStep(project, storageKey))
   }, [project, storageKey])
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!project || typeof window === 'undefined') return
     const raw = window.localStorage.getItem(completedStorageKey)
     const known = new Set(project.steps.map((step) => step.id))
@@ -787,7 +790,7 @@ export function ProjectLab({
     setCompletedStepIds(new Set(parsed))
   }, [completedStorageKey, project])
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!guidePortalId || hideGuidePanel) {
       setGuideTarget(null)
       return
@@ -932,14 +935,12 @@ export function ProjectLab({
           </p>
         ) : null}
         <div className="project-step-nav">
-          <button
-            disabled={!previousStep}
-            onClick={() => previousStep && loadStep(previousStep.id)}
-            type="button"
-          >
-            <ChevronLeft aria-hidden="true" size={15} />
-            <span>{previousStep ? t.back : t.start}</span>
-          </button>
+          {previousStep ? (
+            <button onClick={() => loadStep(previousStep.id)} type="button">
+              <ChevronLeft aria-hidden="true" size={15} />
+              <span>{t.back}</span>
+            </button>
+          ) : null}
           <button
             disabled={!nextStep}
             onClick={() => nextStep && loadStep(nextStep.id)}

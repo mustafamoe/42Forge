@@ -1,7 +1,12 @@
 {
-  "short_name": "42 Docs",
-  "name": "42 Docs",
+  "short_name": "42Forge",
+  "name": "42Forge",
   "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
     {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",

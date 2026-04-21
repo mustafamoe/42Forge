@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { ArrowLeft, CalendarDays, Gauge, Tags } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { NotFound } from '../components/NotFound'
 import { ProjectLab } from '../components/ProjectLab'
@@ -8,6 +8,9 @@ import { mdxComponents } from '../components/mdx'
 import { getArticle, getArticleSummary } from '../lib/content'
 import { asLocale, asSection, isLocale, isSection, type Locale } from '../lib/i18n'
 import * as m from '../paraglide/messages.js'
+
+const useIsomorphicLayoutEffect =
+  typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 export const Route = createFileRoute('/$locale/$section/$slug')({
   beforeLoad: ({ params }) => {
@@ -28,31 +31,38 @@ export const Route = createFileRoute('/$locale/$section/$slug')({
     return {
       meta: article
         ? [
-            { title: `${article.title} | 42 Docs` },
+            { title: `${article.title} | 42Forge` },
             {
               name: 'description',
               content: article.description,
             },
           ]
-        : [{ title: 'Not found | 42 Docs' }],
+        : [{ title: 'Not found | 42Forge' }],
     }
   },
   component: ArticlePage,
+  pendingComponent: ProjectDetailSkeleton,
 })
 
 function ArticlePage() {
   const { locale: localeParam, section: sectionParam } = Route.useParams()
   const locale = asLocale(localeParam)
+  const isRtl = locale === 'ar'
   const section = asSection(sectionParam)
   const { slug } = Route.useParams()
   const article = getArticle(locale, section, slug)
   const [readerWidth, setReaderWidth] = useState(390)
   const [overviewDismissed, setOverviewDismissed] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
   const overviewStorageKey = article?.projectLabId
     ? `guided-project:${article.projectLabId}:overview-seen`
     : ''
 
   useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
+  useIsomorphicLayoutEffect(() => {
     if (!overviewStorageKey || typeof window === 'undefined') return
     setOverviewDismissed(window.localStorage.getItem(overviewStorageKey) === 'true')
   }, [overviewStorageKey])
@@ -75,7 +85,9 @@ function ArticlePage() {
     event.currentTarget.setPointerCapture(pointerId)
 
     const onMove = (moveEvent: PointerEvent) => {
-      const width = Math.round(moveEvent.clientX - bounds.left)
+      const width = Math.round(
+        isRtl ? bounds.right - moveEvent.clientX : moveEvent.clientX - bounds.left,
+      )
       const maxWidth = Math.round(bounds.width * 0.52)
       setReaderWidth(Math.min(Math.max(width, 310), maxWidth))
     }
@@ -101,6 +113,10 @@ function ArticlePage() {
   }
 
   if (hasProjectLab) {
+    if (!isHydrated) {
+      return <ProjectDetailSkeleton />
+    }
+
     return (
       <main className="learning-page">
         <header className="learning-topbar">
@@ -141,8 +157,14 @@ function ArticlePage() {
             aria-orientation="vertical"
             className="learning-resizer"
             onKeyDown={(event) => {
-              if (event.key === 'ArrowLeft') adjustReader(-24)
-              if (event.key === 'ArrowRight') adjustReader(24)
+              if (event.key === 'ArrowLeft') {
+                event.preventDefault()
+                adjustReader(isRtl ? 24 : -24)
+              }
+              if (event.key === 'ArrowRight') {
+                event.preventDefault()
+                adjustReader(isRtl ? -24 : 24)
+              }
             }}
             onPointerDown={resizeReader}
             role="separator"
@@ -212,6 +234,72 @@ function ArticlePage() {
           ))}
         </nav>
       </aside>
+    </main>
+  )
+}
+
+function ProjectDetailSkeleton() {
+  return (
+    <main className="learning-page project-detail-skeleton" aria-busy="true">
+      <header className="learning-topbar">
+        <div className="learning-toolbar-slot">
+          <div className="project-detail-skeleton-toolbar" aria-hidden="true">
+            <span className="project-detail-skeleton-chip" />
+            <span className="project-detail-skeleton-line is-short" />
+            <span className="project-detail-skeleton-button" />
+            <span className="project-detail-skeleton-button" />
+            <span className="project-detail-skeleton-button is-accent" />
+          </div>
+        </div>
+      </header>
+
+      <section
+        className="learning-layout"
+        style={{ '--reader-width': '390px' } as CSSProperties}
+      >
+        <article className="article-shell">
+          <div className="project-detail-skeleton-copy" aria-hidden="true">
+            <span className="project-detail-skeleton-line is-tiny" />
+            <span className="project-detail-skeleton-line is-heading" />
+            <span className="project-detail-skeleton-line" />
+            <span className="project-detail-skeleton-line is-wide" />
+            <span className="project-detail-skeleton-card" />
+            <span className="project-detail-skeleton-line is-label" />
+            <span className="project-detail-skeleton-card is-small" />
+            <span className="project-detail-skeleton-line is-label" />
+            <span className="project-detail-skeleton-card is-short" />
+          </div>
+        </article>
+
+        <div className="learning-resizer" aria-hidden="true" />
+
+        <aside className="learning-lab" data-pagefind-ignore>
+          <div className="project-detail-skeleton-editor" aria-hidden="true">
+            <div className="project-detail-skeleton-tree">
+              <span className="project-detail-skeleton-line is-label" />
+              <span className="project-detail-skeleton-row is-active" />
+              <span className="project-detail-skeleton-row" />
+              <span className="project-detail-skeleton-row" />
+              <span className="project-detail-skeleton-row" />
+            </div>
+            <div className="project-detail-skeleton-code">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="project-detail-skeleton-side">
+              <span className="project-detail-skeleton-line is-label" />
+              <span className="project-detail-skeleton-card is-small" />
+              <span className="project-detail-skeleton-line is-label" />
+              <span className="project-detail-skeleton-card" />
+            </div>
+          </div>
+        </aside>
+      </section>
+      <span className="sr-only">Loading project</span>
     </main>
   )
 }

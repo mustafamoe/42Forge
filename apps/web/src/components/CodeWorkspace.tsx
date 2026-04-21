@@ -37,8 +37,9 @@ import {
   TerminalSquare,
 } from 'lucide-react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { toast as heroToast } from '@heroui/react'
 import { runCode } from '../lib/editor-runner'
 import type { StepCheckCase } from '../lib/guided-projects'
 import type { Locale } from '../lib/i18n'
@@ -57,6 +58,9 @@ import {
   type ProjectTemplate,
   type RunResult,
 } from '../lib/editor-workspace'
+
+const useIsomorphicLayoutEffect =
+  typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 type WorkspaceCopy = {
   language: string
@@ -179,6 +183,17 @@ const workspaceCopy = {
   },
 } satisfies Record<Locale, WorkspaceCopy>
 
+const TREE_PANEL_MIN = 210
+const TREE_PANEL_DEFAULT = 240
+const TREE_PANEL_MAX = 380
+const SIDE_PANEL_MIN = 300
+const SIDE_PANEL_DEFAULT = 360
+const SIDE_PANEL_MAX = 560
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
 export type CodeNote = {
   path: string
   start: number
@@ -227,26 +242,26 @@ const codeEditorTheme = EditorView.theme(
       lineHeight: '1.45',
     },
     '.cm-content': {
-      caretColor: '#f4c95d',
+      caretColor: 'var(--code-caret)',
       paddingBlock: '0.45rem',
     },
     '.cm-line': {
       paddingInline: '0.55rem',
     },
     '.cm-gutters': {
-      backgroundColor: 'color-mix(in oklab, var(--code-bg) 84%, #48b685 16%)',
-      borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-      color: 'rgba(237, 242, 247, 0.48)',
+      backgroundColor: 'var(--code-gutter-bg)',
+      borderRight: '1px solid var(--code-gutter-border)',
+      color: 'var(--code-gutter-text)',
     },
     '.cm-activeLine': {
-      backgroundColor: 'rgba(244, 201, 93, 0.08)',
+      backgroundColor: 'var(--code-active-line)',
     },
     '.cm-activeLineGutter': {
-      backgroundColor: 'rgba(244, 201, 93, 0.1)',
-      color: '#f4c95d',
+      backgroundColor: 'var(--code-active-gutter)',
+      color: 'var(--code-caret)',
     },
     '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
-      backgroundColor: 'rgba(105, 196, 211, 0.28)',
+      backgroundColor: 'var(--code-selection)',
     },
   },
   { dark: true },
@@ -288,6 +303,7 @@ export function CodeWorkspace({
   toolbarStart,
 }: CodeWorkspaceProps) {
   const t = workspaceCopy[locale]
+  const isRtl = locale === 'ar'
   const execute = useServerFn(runCode)
   const [language, setLanguage] = useState<Language>(initialLanguage)
   const [files, setFiles] = useState<Array<ProjectFile>>(
@@ -304,14 +320,36 @@ export function CodeWorkspace({
   const [result, setResult] = useState<RunResult | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [isChecking, setIsChecking] = useState(false)
-  const [notice, setNotice] = useState('')
+  const toastKeyRef = useRef<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
-  const [toolbarTarget, setToolbarTarget] = useState<HTMLElement | null>(null)
-  const [treeWidth, setTreeWidth] = useState(150)
-  const [sideWidth, setSideWidth] = useState(210)
+  const [toolbarTarget, setToolbarTarget] = useState<HTMLElement | null>(() => {
+    if (typeof document === 'undefined' || !toolbarPortalId) return null
+    return document.getElementById(toolbarPortalId)
+  })
+  const [treeWidth, setTreeWidth] = useState(TREE_PANEL_DEFAULT)
+  const [sideWidth, setSideWidth] = useState(SIDE_PANEL_DEFAULT)
   const [selectedCodeLine, setSelectedCodeLine] = useState<number | null>(null)
 
-  useEffect(() => {
+  const clearToast = () => {
+    if (!toastKeyRef.current) return
+    heroToast.close(toastKeyRef.current)
+    toastKeyRef.current = null
+  }
+
+  const showToast = (message: string, tone: 'info' | 'success' | 'error' = 'info') => {
+    clearToast()
+    const options = { timeout: 4500 }
+    toastKeyRef.current =
+      tone === 'success'
+        ? heroToast.success(message, options)
+        : tone === 'error'
+          ? heroToast.danger(message, options)
+          : heroToast.info(message, options)
+  }
+
+  useEffect(() => () => clearToast(), [])
+
+  useIsomorphicLayoutEffect(() => {
     const project = cloneTemplate(initialTemplate)
     setLanguage(initialLanguage)
     setFiles(project.files)
@@ -320,13 +358,13 @@ export function CodeWorkspace({
     setActivePath(project.activePath)
     setStdin(initialStdin)
     setResult(null)
-    setNotice('')
+    clearToast()
     setIsDirty(false)
     setSelectedCodeLine(null)
     setIsChecking(false)
   }, [initialLanguage, initialStdin, initialTemplate, workspaceKey])
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!toolbarPortalId) {
       setToolbarTarget(null)
       return
@@ -391,7 +429,7 @@ export function CodeWorkspace({
     setActivePath(project.activePath)
     setStdin(allowLanguageSwitch ? starterInput[nextLanguage] : initialStdin)
     setResult(null)
-    setNotice('')
+    clearToast()
     setIsDirty(false)
     setIsChecking(false)
   }
@@ -422,7 +460,7 @@ export function CodeWorkspace({
     try {
       const path = normalizeProjectPath(answer)
       if (files.some((file) => file.path === path)) {
-        setNotice(t.duplicatePath)
+        showToast(t.duplicatePath, 'error')
         return
       }
 
@@ -441,10 +479,10 @@ export function CodeWorkspace({
         return nextFolders
       })
       setActivePath(path)
-      setNotice('')
+      clearToast()
       setIsDirty(true)
     } catch {
-      setNotice(t.invalidPath)
+      showToast(t.invalidPath, 'error')
     }
   }
 
@@ -455,16 +493,16 @@ export function CodeWorkspace({
     try {
       const path = normalizeProjectPath(answer, true)
       if (folders.some((folder) => folder.path === path)) {
-        setNotice(t.duplicatePath)
+        showToast(t.duplicatePath, 'error')
         return
       }
 
       setFolders((currentFolders) => [...currentFolders, { path }])
       setExpandedFolders((currentFolders) => new Set(currentFolders).add(path))
-      setNotice('')
+      clearToast()
       setIsDirty(true)
     } catch {
-      setNotice(t.invalidPath)
+      showToast(t.invalidPath, 'error')
     }
   }
 
@@ -497,7 +535,7 @@ export function CodeWorkspace({
     setExpandedFolders(getExpandedFolderPaths(project.files, project.folders))
     setActivePath(project.activePath)
     setResult(null)
-    setNotice('')
+    clearToast()
     setIsDirty(true)
     setSelectedCodeLine(null)
   }
@@ -554,7 +592,7 @@ export function CodeWorkspace({
     if (!checkCases.length) return
     setIsChecking(true)
     setResult(null)
-    setNotice('')
+    clearToast()
 
     try {
       for (const checkCase of checkCases) {
@@ -569,11 +607,11 @@ export function CodeWorkspace({
         setResult(nextResult)
         const failure = evaluateCheckCase(checkCase, nextResult)
         if (failure) {
-          setNotice(`${t.checkFailed}: ${failure}`)
+          showToast(`${t.checkFailed}: ${failure}`, 'error')
           return
         }
       }
-      setNotice(t.checksPassed)
+      showToast(t.checksPassed, 'success')
       onChecksComplete?.()
     } catch (error) {
       setResult({
@@ -593,7 +631,7 @@ export function CodeWorkspace({
   const runCurrentCode = async () => {
     setIsRunning(true)
     setResult(null)
-    setNotice('')
+    clearToast()
 
     try {
       const nextResult = await execute({
@@ -634,13 +672,21 @@ export function CodeWorkspace({
 
     const onMove = (moveEvent: PointerEvent) => {
       if (panel === 'tree') {
-        const width = Math.round(moveEvent.clientX - bounds.left)
-        setTreeWidth(Math.min(Math.max(width, 96), 320))
+        const width = Math.round(
+          isRtl
+            ? bounds.right - moveEvent.clientX
+            : moveEvent.clientX - bounds.left,
+        )
+        setTreeWidth(clamp(width, TREE_PANEL_MIN, TREE_PANEL_MAX))
         return
       }
 
-      const width = Math.round(bounds.right - moveEvent.clientX)
-      setSideWidth(Math.min(Math.max(width, 150), 420))
+      const width = Math.round(
+        isRtl
+          ? moveEvent.clientX - bounds.left
+          : bounds.right - moveEvent.clientX,
+      )
+      setSideWidth(clamp(width, SIDE_PANEL_MIN, SIDE_PANEL_MAX))
     }
 
     const onUp = () => {
@@ -652,13 +698,22 @@ export function CodeWorkspace({
     window.addEventListener('pointerup', onUp)
   }
 
-  const adjustEditorPanel = (panel: 'tree' | 'side', amount: number) => {
+  const adjustEditorPanel = (panel: 'tree' | 'side', widthDelta: number) => {
     if (panel === 'tree') {
-      setTreeWidth((width) => Math.min(Math.max(width + amount, 96), 320))
+      setTreeWidth((width) => clamp(width + widthDelta, TREE_PANEL_MIN, TREE_PANEL_MAX))
       return
     }
 
-    setSideWidth((width) => Math.min(Math.max(width - amount, 150), 420))
+    setSideWidth((width) => clamp(width + widthDelta, SIDE_PANEL_MIN, SIDE_PANEL_MAX))
+  }
+
+  const adjustEditorPanelForKey = (panel: 'tree' | 'side', physicalDelta: number) => {
+    if (panel === 'tree') {
+      adjustEditorPanel(panel, isRtl ? -physicalDelta : physicalDelta)
+      return
+    }
+
+    adjustEditorPanel(panel, isRtl ? physicalDelta : -physicalDelta)
   }
 
   const toolbar = (
@@ -782,10 +837,13 @@ export function CodeWorkspace({
 
   return (
     <section className="editor-workspace" aria-label={t.project}>
-      {toolbarTarget ? createPortal(toolbar, toolbarTarget) : toolbar}
+      {toolbarPortalId
+        ? toolbarTarget
+          ? createPortal(toolbar, toolbarTarget)
+          : null
+        : toolbar}
 
       {labPanel}
-      {notice ? <p className="editor-notice">{notice}</p> : null}
 
       <div
         className="editor-grid"
@@ -866,8 +924,14 @@ export function CodeWorkspace({
           aria-orientation="vertical"
           className="editor-resizer"
           onKeyDown={(event) => {
-            if (event.key === 'ArrowLeft') adjustEditorPanel('tree', -16)
-            if (event.key === 'ArrowRight') adjustEditorPanel('tree', 16)
+            if (event.key === 'ArrowLeft') {
+              event.preventDefault()
+              adjustEditorPanelForKey('tree', -16)
+            }
+            if (event.key === 'ArrowRight') {
+              event.preventDefault()
+              adjustEditorPanelForKey('tree', 16)
+            }
           }}
           onPointerDown={(event) => resizeEditorPanel('tree', event)}
           role="separator"
@@ -895,8 +959,14 @@ export function CodeWorkspace({
           aria-orientation="vertical"
           className="editor-resizer"
           onKeyDown={(event) => {
-            if (event.key === 'ArrowLeft') adjustEditorPanel('side', -16)
-            if (event.key === 'ArrowRight') adjustEditorPanel('side', 16)
+            if (event.key === 'ArrowLeft') {
+              event.preventDefault()
+              adjustEditorPanelForKey('side', -16)
+            }
+            if (event.key === 'ArrowRight') {
+              event.preventDefault()
+              adjustEditorPanelForKey('side', 16)
+            }
           }}
           onPointerDown={(event) => resizeEditorPanel('side', event)}
           role="separator"
@@ -1009,7 +1079,7 @@ function CodeEditor({
     valueRef.current = value
   }, [value])
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!hostRef.current) return
 
     const view = new EditorView({

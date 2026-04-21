@@ -1,15 +1,11 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
-import {
-  CheckCircle2,
-  FileTerminal,
-  ListChecks,
-  Search,
-  TerminalSquare,
-} from 'lucide-react'
+import { createFileRoute } from '@tanstack/react-router'
+import { ArrowUpRight, Briefcase, MessageSquarePlus } from 'lucide-react'
 import { ArticleGrid } from '../components/ArticleCard'
+import { GitHubLogo } from '../components/GitHubLogo'
 import Header from '../components/Header'
 import { getArticleSummaries } from '../lib/content'
 import { asLocale } from '../lib/i18n'
+import { GITHUB_ISSUE_URL, GITHUB_REPO_URL } from '../lib/links'
 import * as m from '../paraglide/messages.js'
 
 export const Route = createFileRoute('/$locale/')({
@@ -23,74 +19,49 @@ function HomePage() {
   const { locale: localeParam } = Route.useParams()
   const locale = asLocale(localeParam)
   const { projects } = Route.useLoaderData()
-  const isArabic = locale === 'ar'
-
-  const pathSteps = [
-    {
-      icon: FileTerminal,
-      title: isArabic ? 'اقرأ المطلوب' : m.guided_step_one({}, { locale }),
-      text: isArabic
-        ? 'افهم القيود، المدخلات، وحالات الفشل قبل كتابة الحل.'
-        : 'Understand constraints, inputs, and failure cases before writing the solution.',
-    },
-    {
-      icon: TerminalSquare,
-      title: isArabic ? 'ابن الأساس' : m.guided_step_two({}, { locale }),
-      text: isArabic
-        ? 'قسّم المشروع إلى parser، منطق، اختبارات، وحالات طرفية.'
-        : 'Split the project into parser, core logic, tests, and edge cases.',
-    },
-    {
-      icon: CheckCircle2,
-      title: isArabic ? 'اختبر مثل التقييم' : m.guided_step_three({}, { locale }),
-      text: isArabic
-        ? 'شغّل أوامر تحقق قريبة من التصحيح الحقيقي قبل التسليم.'
-        : 'Run evaluator-style checks before submitting or defending the work.',
-    },
-  ]
 
   return (
     <>
       <Header />
       <main className="home-page">
         <section className="section-block page-wrap" id="projects">
-          <div className="section-heading with-icon">
-            <ListChecks aria-hidden="true" size={30} />
-            <div>
-              <p className="eyebrow">
-                {m.all_projects({}, { locale })}
-              </p>
-              <h2>
-                {isArabic ? 'اختر مشروعك وابدأ البناء.' : 'Pick a project and start building.'}
-              </h2>
-            </div>
+          <div className="section-heading projects-heading">
+            <Briefcase aria-hidden="true" size={28} />
+            <h2>
+              {m.nav_projects({}, { locale })}
+            </h2>
           </div>
           <ArticleGrid articles={projects} locale={locale} />
         </section>
 
-        <section className="section-block page-wrap" id="exam-track">
-          <div className="section-heading split-heading">
-            <div>
-              <p className="eyebrow">
-                {isArabic ? 'مسار الدراسة' : 'Study path'}
-              </p>
-              <h2>
-                {isArabic ? 'طريقة واحدة لكل مشروع وامتحان.' : 'One flow for every project and exam.'}
-              </h2>
+        <section className="contribute-section" id="contribute">
+          <div className="contribute-inner page-wrap">
+            <div className="contribute-copy">
+              <p className="eyebrow">{m.contribute_eyebrow({}, { locale })}</p>
+              <h2>{m.contribute_title({}, { locale })}</h2>
+              <p>{m.contribute_body({}, { locale })}</p>
             </div>
-            <Link to="/$locale/search" params={{ locale }} className="secondary-link">
-              <Search aria-hidden="true" size={17} />
-              <span>{m.search_title({}, { locale })}</span>
-            </Link>
-          </div>
-          <div className="style-comparison">
-            {pathSteps.map((item) => (
-              <article key={item.title} className="style-card">
-                <item.icon aria-hidden="true" size={24} />
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </article>
-            ))}
+            <div className="contribute-actions" aria-label={m.contribute_eyebrow({}, { locale })}>
+              <a
+                href={GITHUB_ISSUE_URL}
+                className="primary-link"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <MessageSquarePlus aria-hidden="true" size={17} />
+                <span>{m.contribute_primary({}, { locale })}</span>
+                <ArrowUpRight aria-hidden="true" size={15} />
+              </a>
+              <a
+                href={GITHUB_REPO_URL}
+                className="secondary-link"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <GitHubLogo size={17} />
+                <span>{m.contribute_secondary({}, { locale })}</span>
+              </a>
+            </div>
           </div>
         </section>
       </main>
