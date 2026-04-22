@@ -16,7 +16,7 @@ describe('i18n helpers', () => {
 
   it('builds locale-prefixed paths', () => {
     expect(localizedPath('en', '/projects/sample')).toBe('/en/projects/sample')
-    expect(localizedPath('ar', 'search')).toBe('/ar/search')
+    expect(localizedPath('ar', 'projects')).toBe('/ar/projects')
     expect(otherLocale('en')).toBe('ar')
   })
 })

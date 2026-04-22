@@ -1,7 +1,6 @@
 {
   "brand": "42Forge",
   "nav_projects": "Projects",
-  "nav_search": "Search",
   "nav_language": "Switch to Arabic",
   "hero_eyebrow": "42 push_swap guide",
   "hero_title": "Learn push_swap by building the reasoning, not copying the answer.",
@@ -10,8 +9,6 @@
   "hero_secondary": "See the path",
   "projects_title": "push_swap",
   "projects_description": "The guided project page for the 42 push_swap subject.",
-  "search_title": "Search",
-  "search_description": "Search the generated Pagefind index for the guided push_swap notes.",
   "empty_title": "Nothing here yet",
   "empty_body": "Add a guided MDX file to grow this section.",
   "guide_badge": "Guided",

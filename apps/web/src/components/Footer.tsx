@@ -1,4 +1,4 @@
-import { Code2, Search } from 'lucide-react'
+import { Code2 } from 'lucide-react'
 import { GitHubLogo } from './GitHubLogo'
 import { GITHUB_REPO_URL } from '../lib/links'
 import { getLocale } from '../paraglide/runtime.js'
@@ -22,13 +22,6 @@ export default function Footer() {
             className="footer-link"
           >
             <Code2 aria-hidden="true" size={18} />
-          </a>
-          <a
-            href={`/${locale}/search`}
-            aria-label="Search"
-            className="footer-link"
-          >
-            <Search aria-hidden="true" size={18} />
           </a>
           <a
             href={GITHUB_REPO_URL}

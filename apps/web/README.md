@@ -9,7 +9,6 @@ Localized docs-first site for 42 project and exam explanations.
 - HeroUI v3, Tailwind CSS v4, lucide-react
 - MDX with custom article primitives
 - Paraglide JS for English and Arabic i18n
-- Pagefind for multilingual static search
 
 ## Commands
 
@@ -59,9 +58,3 @@ Routes are locale-prefixed:
 
 Arabic pages render with `lang="ar"` and `dir="rtl"`. UI strings live in
 Paraglide messages under `messages`.
-
-## Search
-
-`bun run build` prerenders localized routes and runs Pagefind against
-`.output/public`. Article pages use `data-pagefind-body`, so the search index
-stays focused on explanation content.

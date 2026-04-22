@@ -127,7 +127,7 @@ function ArticlePage() {
           className="learning-layout"
           style={{ '--reader-width': `${readerWidth}px` } as CSSProperties}
         >
-          <article className="article-shell" data-pagefind-body>
+          <article className="article-shell">
             {!overviewDismissed ? (
               <>
                 <ProjectOverview locale={locale} onStart={startSteps} />
@@ -171,7 +171,7 @@ function ArticlePage() {
             tabIndex={0}
           />
 
-          <aside className="learning-lab" data-pagefind-ignore>
+          <aside className="learning-lab">
             <ProjectLab
               projectId={article.projectLabId!}
               guidePortalId="project-lab-guide-panel"
@@ -186,7 +186,7 @@ function ArticlePage() {
 
   return (
     <main className="page-wrap article-layout">
-      <article className="article-shell" data-pagefind-body>
+      <article className="article-shell">
         <a href={`/${locale}#${section}`} className="back-link">
           <ArrowLeft aria-hidden="true" size={16} />
           <span>{m.nav_projects({}, { locale })}</span>
@@ -220,7 +220,7 @@ function ArticlePage() {
         </div>
       </article>
 
-      <aside className="toc" data-pagefind-ignore>
+      <aside className="toc">
         <p>{m.table_of_contents({}, { locale })}</p>
         <nav aria-label={m.table_of_contents({}, { locale })}>
           {article.tableOfContents.map((item) => (
@@ -276,7 +276,7 @@ function ProjectDetailSkeleton() {
           aria-hidden="true"
         />
 
-        <aside className="learning-lab" data-pagefind-ignore>
+        <aside className="learning-lab">
           <div className="project-detail-skeleton-editor" aria-hidden="true">
             <div className="project-detail-skeleton-tree">
               <span className="project-detail-skeleton-line is-label" />

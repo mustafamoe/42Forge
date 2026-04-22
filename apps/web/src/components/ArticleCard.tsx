@@ -6,7 +6,7 @@ import * as m from '../paraglide/messages.js'
 
 export function ArticleCard({ article }: { article: ArticleSummary }) {
   return (
-    <article className="article-card" data-pagefind-ignore>
+    <article className="article-card">
       <div className="article-card-top">
         <span className="style-badge">
           <BookOpenCheck aria-hidden="true" size={15} />

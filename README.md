@@ -31,7 +31,6 @@ Pull requests are welcome too.
 - Tailwind CSS v4 and HeroUI
 - MDX content
 - Paraglide JS for English and Arabic localization
-- Pagefind for static search
 
 ## Getting Started
 

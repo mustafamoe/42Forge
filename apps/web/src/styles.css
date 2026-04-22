@@ -232,7 +232,6 @@ pre code {
 .secondary-link,
 .back-link,
 .file-tree-title,
-.search-box,
 .icon-link,
 .flag-link {
   display: flex;
@@ -396,7 +395,6 @@ pre code {
 .style-card,
 .article-shell,
 .toc,
-.search-panel,
 .empty-state {
   border: var(--hard-border);
   background: var(--surface);
@@ -1603,53 +1601,8 @@ pre code {
   padding-inline-start: 0.8rem;
 }
 
-.search-panel,
 .empty-state {
   padding: 0.85rem;
-}
-
-.search-box {
-  gap: 0.55rem;
-  border: var(--hard-border);
-  background: var(--surface-soft);
-  padding: 0.55rem 0.65rem;
-}
-
-.search-box input {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-}
-
-.search-helper {
-  color: var(--muted);
-}
-
-.search-results {
-  display: grid;
-  gap: 0.5rem;
-  margin-top: 0.7rem;
-}
-
-.search-result {
-  display: grid;
-  gap: 0.25rem;
-  border: var(--hard-border);
-  background: var(--surface-soft);
-  padding: 0.65rem;
-  text-decoration: none;
-}
-
-.search-result:hover {
-  background: var(--control-bg);
-  color: #111111;
-}
-
-.search-result span {
-  color: var(--muted);
 }
 
 .editor-heading {

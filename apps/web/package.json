@@ -7,14 +7,13 @@
   },
   "scripts": {
     "dev": "bun --bun vite dev --port 3000",
-    "build": "bun --bun vite build && bun run search:index",
+    "build": "bun --bun vite build",
     "typecheck": "bun run paraglide && tsc -p tsconfig.json --noEmit",
     "preview": "bun --bun vite preview",
     "start": "bun run .output/server/index.mjs",
     "test": "vitest run --config vitest.config.ts",
     "paraglide": "paraglide-js compile --project ../../project.inlang --outdir ./src/paraglide --emit-ts-declarations --strategy url cookie preferredLanguage baseLocale",
-    "search:index": "pagefind --site .output/public --output-subdir pagefind",
-    "clean": "rm -rf .output .turbo .vite .vinxi src/paraglide src/routeTree.gen.ts public/pagefind"
+    "clean": "rm -rf .output .turbo .vite .vinxi src/paraglide src/routeTree.gen.ts"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
@@ -51,7 +50,6 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
     "jsdom": "^29.0.2",
-    "pagefind": "^1.4.0",
     "rehype-pretty-code": "^0.14.3",
     "remark-gfm": "^4.0.1",
     "shiki": "^4.0.2",
